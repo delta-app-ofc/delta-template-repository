@@ -13,6 +13,7 @@ concurrency:
 
 jobs:
   validar-template:
+    name: ci-tecnico
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -32,12 +33,39 @@ jobs:
             exit 1
           fi
 
+  testes-sonar:
+    name: Testes Sonar
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - validar-template
+    if: always()
+    steps:
+      - name: Registrar Sonar como não aplicável
+        run: |
+          {
+            echo '## Testes Sonar'
+            echo
+            echo 'Análise Sonar: **N/A** — este repositório não possui integração Sonar configurada; este check depende da validação documental e de configuração executada por `ci-tecnico`.'
+            echo
+            echo 'A validação documental e de configuração é executada pelo job `ci-tecnico`.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Exigir sucesso da validação técnica
+        env:
+          VALIDACAO_RESULTADO: ${{ needs.validar-template.result }}
+        run: |
+          if [ "$VALIDACAO_RESULTADO" != "success" ]; then
+            echo "O gate Testes Sonar exige sucesso em ci-tecnico; resultado: $VALIDACAO_RESULTADO" >&2
+            exit 1
+          fi
+
   report-ci:
     name: Reportar resultado do CI na PR
     if: always() && github.event_name == 'pull_request'
     needs:
       - validar-template
-    uses: delta-app-ofc/.github/.github/workflows/report_ci.yml@8f4329cdde8ad39527069966a5cb97bbb49675b5
+      - testes-sonar
+    uses: delta-app-ofc/.github/.github/workflows/report_ci.yml@d30cc21215e716966e2e05a22e0caa1d410f1b65
     with:
       needs_results: ${{ toJSON(needs) }}
     secrets:
