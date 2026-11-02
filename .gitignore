@@ -133,3 +133,7 @@ desktop.ini
 # Arquivos locais do projeto
 # ============================================
 TASK*.md
+
+# Regras obrigatórias de artefatos locais do CI
+reports/
+.scannerwork/
